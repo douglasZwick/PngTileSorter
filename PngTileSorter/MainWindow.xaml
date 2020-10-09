@@ -6,12 +6,12 @@
         xmlns:local="clr-namespace:PngTileSorter"
         mc:Ignorable="d"
         Title="PNG Tile Sorter" Height="450" Width="800" ResizeMode="CanMinimize" SizeToContent="WidthAndHeight" WindowStartupLocation="CenterScreen">
-    <Grid>
+    <Grid Background="#FF505050">
         <Button x:Name="m_ChooseFileButton" Content="Choose File" HorizontalAlignment="Left" VerticalAlignment="Top" Width="75" Click="ChooseFileButton_Click"/>
         <TextBlock x:Name="m_FilePath" HorizontalAlignment="Left" Margin="80,2,0,0" VerticalAlignment="Top" Width="300" Text="Choose a PNG file" TextTrimming="CharacterEllipsis"/>
-        <Rectangle x:Name="m_SourceBackground" Fill="#BF000000" HorizontalAlignment="Left" Height="100" Stroke="Black" VerticalAlignment="Top" Width="100" Margin="0,25,0,0"/>
-        <Image x:Name="m_SourceImage" HorizontalAlignment="Left" Height="100" Margin="0,25,0,0" VerticalAlignment="Top" Width="100" RenderOptions.BitmapScalingMode="NearestNeighbor" Stretch="None"/>
-        <Rectangle x:Name="m_OutputBackground" Fill="#BF000000" HorizontalAlignment="Left" Height="100" Stroke="Black" VerticalAlignment="Top" Width="100" Margin="105,25,0,0"/>
-        <Image x:Name="m_OutputImage" HorizontalAlignment="Left" Height="100" Margin="105,25,0,0" VerticalAlignment="Top" Width="100" RenderOptions.BitmapScalingMode="NearestNeighbor" Stretch="None"/>
+        <Rectangle x:Name="m_InputBackground" Fill="#BF282828" HorizontalAlignment="Left" Height="100" VerticalAlignment="Top" Width="100" Margin="0,25,0,0"/>
+        <Image x:Name="m_InputImage" HorizontalAlignment="Left" Height="100" Margin="0,25,0,0" VerticalAlignment="Top" Width="100" RenderOptions.BitmapScalingMode="NearestNeighbor" Stretch="None"/>
+        <Rectangle x:Name="m_OutputBackground" Fill="#BF282828" HorizontalAlignment="Left" Height="100" VerticalAlignment="Top" Width="100" Margin="193,25,0,0"/>
+        <Image x:Name="m_OutputImage" HorizontalAlignment="Left" Height="100" Margin="193,25,0,0" VerticalAlignment="Top" Width="100" RenderOptions.BitmapScalingMode="NearestNeighbor" Stretch="None"/>
     </Grid>
 </Window>

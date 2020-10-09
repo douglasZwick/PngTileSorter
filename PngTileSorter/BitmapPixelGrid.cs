@@ -13,18 +13,25 @@ namespace PngTileSorter
   {
     public int m_Width { get; private set; }
     public int m_Height { get; private set; }
+    public byte[] m_Pixels { get; private set; }
+    public int m_Stride { get; private set; }
 
-    byte[] m_Pixels;
-    int m_Stride;
-
-    public BitmapPixelGrid(BitmapImage bitmap)
+    public BitmapPixelGrid(int width, int height)
     {
-      m_Width = bitmap.PixelWidth;
-      m_Height = bitmap.PixelHeight;
+      m_Width = width;
+      m_Height = height;
+      m_Pixels = new byte[width * height * 4];
+      m_Stride = width * 4;
+    }
+
+    public BitmapPixelGrid(BitmapSource source)
+    {
+      m_Width = source.PixelWidth;
+      m_Height = source.PixelHeight;
       m_Pixels = new byte[m_Width * m_Height * 4];
       m_Stride = m_Width * 4;
 
-      bitmap.CopyPixels(m_Pixels, m_Stride, 0);
+      source.CopyPixels(m_Pixels, m_Stride, 0);
     }
 
     public Color this[int i]
@@ -32,9 +39,9 @@ namespace PngTileSorter
       get
       {
         i *= 4;
-        var r = m_Pixels[i + 0];
+        var b = m_Pixels[i + 0];
         var g = m_Pixels[i + 1];
-        var b = m_Pixels[i + 2];
+        var r = m_Pixels[i + 2];
         var a = m_Pixels[i + 3];
 
         return new Color() { R = r, G = g, B = b, A = a };
@@ -43,9 +50,9 @@ namespace PngTileSorter
       set
       {
         i *= 4;
-        m_Pixels[i + 0] = value.R;
+        m_Pixels[i + 0] = value.B;
         m_Pixels[i + 1] = value.G;
-        m_Pixels[i + 2] = value.B;
+        m_Pixels[i + 2] = value.R;
         m_Pixels[i + 3] = value.A;
       }
     }
@@ -55,9 +62,9 @@ namespace PngTileSorter
       get
       {
         var index = y * m_Stride + x * 4;
-        var r = m_Pixels[index + 0];
+        var b = m_Pixels[index + 0];
         var g = m_Pixels[index + 1];
-        var b = m_Pixels[index + 2];
+        var r = m_Pixels[index + 2];
         var a = m_Pixels[index + 3];
 
         return new Color() { R = r, G = g, B = b, A = a };
@@ -66,9 +73,9 @@ namespace PngTileSorter
       set
       {
         var index = y * m_Stride + x * 4;
-        m_Pixels[index + 0] = value.R;
+        m_Pixels[index + 0] = value.B;
         m_Pixels[index + 1] = value.G;
-        m_Pixels[index + 2] = value.B;
+        m_Pixels[index + 2] = value.R;
         m_Pixels[index + 3] = value.A;
       }
     }

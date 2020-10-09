@@ -1,21 +1,10 @@
 ﻿using Microsoft.Win32;
 using System;
-using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
-using System.Linq;
 using System.Runtime.CompilerServices;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
 using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
 
 namespace PngTileSorter
 {
@@ -54,6 +43,9 @@ namespace PngTileSorter
       }
     }
 
+    private (int, int)[] m_Weights;
+    private BitmapPixelGrid m_OutputPixels;
+
     public MainWindow()
     {
       InitializeComponent();
@@ -70,30 +62,31 @@ namespace PngTileSorter
       {
         var path = dialog.FileName;
         m_FilePath.Text = path;
-        var fileUri = new Uri(path);
-        var bitmap = new BitmapImage(fileUri);
-        m_SourceBackground.Width = bitmap.Width;
-        m_SourceBackground.Height = bitmap.Height;
-        m_SourceImage.Width = bitmap.Width;
-        m_SourceImage.Height = bitmap.Height;
-        m_SourceImage.Source = bitmap;
-        m_OutputBackground.Width = bitmap.Width;
-        m_OutputBackground.Height = bitmap.Height;
-        m_OutputImage.Width = bitmap.Width;
-        m_OutputImage.Height = bitmap.Height;
+        var inputStream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
+        var decoder = new PngBitmapDecoder(inputStream, BitmapCreateOptions.PreservePixelFormat,
+          BitmapCacheOption.Default);
+        var inputSource = decoder.Frames[0];
+        var pxWidth = inputSource.PixelWidth;
+        var pxHeight = inputSource.PixelHeight;
+        m_InputBackground.Width = inputSource.Width;
+        m_InputBackground.Height = inputSource.Height;
+        m_InputImage.Width = inputSource.Width;
+        m_InputImage.Height = inputSource.Height;
+        m_InputImage.Source = inputSource;
 
-        var pixels = new BitmapPixelGrid(bitmap);
+        var inputPixels = new BitmapPixelGrid(inputSource);
 
-        var cols = bitmap.PixelWidth / m_TileWidth;
-        var rows = bitmap.PixelHeight / m_TileHeight;
+        var cols = pxWidth / m_TileWidth;
+        var rows = pxHeight / m_TileHeight;
         var tileCount = cols * rows;
-        var weights = new float[tileCount];
+        m_Weights = new (int, int)[tileCount];
 
         for (var row = 0; row < rows; ++row)
         {
           for (var col = 0; col < cols; ++col)
           {
             var weightIndex = row * cols + col;
+            m_Weights[weightIndex].Item1 = weightIndex;
 
             for (var j = 0; j < m_TileHeight; ++j)
             {
@@ -101,12 +94,12 @@ namespace PngTileSorter
               {
                 var x = i + col * m_TileWidth;
                 var y = j + row * m_TileHeight;
-                var color = pixels[x, y];
-                weights[weightIndex] += color.A / 255.0f;
+                var color = inputPixels[x, y];
+                m_Weights[weightIndex].Item2 += color.A;
               }
             }
 
-            weights[weightIndex] /= tileCount;
+            m_Weights[weightIndex].Item2 /= tileCount;
           }
         }
 
@@ -118,6 +111,57 @@ namespace PngTileSorter
         // Then display the new bitmap in the other image
         // as a preview and enable the button that allows
         // the sorted image to be written to file
+
+        Array.Sort(m_Weights, (a, b) => a.Item2.CompareTo(b.Item2));
+
+        m_OutputPixels = new BitmapPixelGrid(pxWidth, pxHeight);
+
+        for (var outputIndex = 0; outputIndex < m_Weights.Length; ++outputIndex)
+        {
+          var outputRow = outputIndex / cols;
+          var outputCol = outputIndex % cols;
+
+          var item = m_Weights[outputIndex];
+          var inputIndex = item.Item1;
+          var inputRow = inputIndex / cols;
+          var inputCol = inputIndex % cols;
+
+          for (var j = 0; j < m_TileHeight; ++j)
+          {
+            for (var i = 0; i < m_TileWidth; ++i)
+            {
+              var inputX = inputCol * m_TileWidth + i;
+              var inputY = inputRow * m_TileHeight + j;
+              var outputX = outputCol * m_TileWidth + i;
+              var outputY = outputRow * m_TileHeight + j;
+              m_OutputPixels[outputX, outputY] = inputPixels[inputX, inputY];
+            }
+          }
+        }
+
+        var outputSource = BitmapSource.Create(pxWidth, pxHeight, inputSource.DpiX, inputSource.DpiY,
+          inputSource.Format, inputSource.Palette, m_OutputPixels.m_Pixels, m_OutputPixels.m_Stride);
+
+        m_OutputBackground.Width = inputSource.Width;
+        m_OutputBackground.Height = inputSource.Height;
+        m_OutputImage.Width = inputSource.Width;
+        m_OutputImage.Height = inputSource.Height;
+        m_OutputImage.Source = outputSource;
+
+        var outputDirectory = Path.GetDirectoryName(path);
+        var inputFileNameWithoutExtension = Path.GetFileNameWithoutExtension(path);
+        var outputFileNameWithoutExtension = inputFileNameWithoutExtension + " (sorted)";
+        var extension = Path.GetExtension(path);
+        var outputFileName = outputFileNameWithoutExtension + extension;
+        var outputPath = Path.Combine(outputDirectory, outputFileName);
+
+        using (var outputStream = new FileStream(outputPath, FileMode.Create))
+        {
+          var encoder = new PngBitmapEncoder();
+          encoder.Interlace = PngInterlaceOption.Off;
+          encoder.Frames.Add(BitmapFrame.Create(outputSource));
+          encoder.Save(outputStream);
+        }
       }
     }
 
